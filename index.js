@@ -45,17 +45,27 @@ async function run() {
 
     app.get('/products', async (req, res) => {
         try {
-          const searchQuery = req.query.search || '';
-          const regex = new RegExp(searchQuery, 'i'); 
+          const { search ='', brand = '', category = '', minPrice = 0, maxPrice = 10000000 } = req.query;
+          const searchRegex = new RegExp(search, 'i'); 
+          const brandRegex = new RegExp(brand, 'i');
+          const categoryRegex = new RegExp(category, 'i');
       
-          const cursor = productsCollection.find({
-            $or: [
-              { product_name: regex },
-              { brand_name: regex },
-              { category_name: regex }
+          const minPriceInt = parseInt(minPrice);
+          const maxPriceInt = parseInt(maxPrice);        
+          console.log('min',minPrice);
+          console.log('search:',search);
+      
+          const query = {
+            $and: [
+                {product_name: {$regex:searchRegex}},
+              { brand_name: { $regex: brandRegex } },
+              { category_name: { $regex: categoryRegex } },
+              ...(minPrice || maxPrice ? [{ price_range: { $gte: minPriceInt , $lte: maxPriceInt } }] : [])
             ]
-          });
+          };
+          console.log('query:',query);
       
+          const cursor = productsCollection.find(query);
           const result = await cursor.toArray();
           res.json(result);
         } catch (error) {
@@ -63,9 +73,27 @@ async function run() {
           res.status(500).json({ error: 'Internal server error' });
         }
       });
-      
-      
 
+    app.get('/brands', async (req, res) => {
+        try {
+          const brands = await productsCollection.distinct('brand_name');
+          res.json(brands);
+        } catch (error) {
+          console.error('Error retrieving brands:', error);
+          res.status(500).json({ error: 'Internal server error' });
+        }
+      });
+      
+      // Endpoint to get distinct categories
+      app.get('/categories', async (req, res) => {
+        try {
+          const categories = await productsCollection.distinct('category_name');
+          res.json(categories);
+        } catch (error) {
+          console.error('Error retrieving categories:', error);
+          res.status(500).json({ error: 'Internal server error' });
+        }
+      });
 
 
    
