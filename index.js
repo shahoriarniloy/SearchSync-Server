@@ -43,10 +43,19 @@ async function run() {
     const database = client.db("techDB");
     const productsCollection =database.collection("products");
 
-   
     app.get('/products', async (req, res) => {
         try {
-          const cursor = productsCollection.find();
+          const searchQuery = req.query.search || '';
+          const regex = new RegExp(searchQuery, 'i'); 
+      
+          const cursor = productsCollection.find({
+            $or: [
+              { product_name: regex },
+              { brand_name: regex },
+              { category_name: regex }
+            ]
+          });
+      
           const result = await cursor.toArray();
           res.json(result);
         } catch (error) {
@@ -54,6 +63,7 @@ async function run() {
           res.status(500).json({ error: 'Internal server error' });
         }
       });
+      
       
 
 
