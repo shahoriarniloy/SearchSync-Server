@@ -44,35 +44,45 @@ async function run() {
     const productsCollection =database.collection("products");
 
     app.get('/products', async (req, res) => {
-        try {
-          const { search ='', brand = '', category = '', minPrice = 0, maxPrice = 10000000 } = req.query;
-          const searchRegex = new RegExp(search, 'i'); 
-          const brandRegex = new RegExp(brand, 'i');
-          const categoryRegex = new RegExp(category, 'i');
-      
-          const minPriceInt = parseInt(minPrice);
-          const maxPriceInt = parseInt(maxPrice);        
-          console.log('min',minPrice);
-          console.log('search:',search);
-      
-          const query = {
-            $and: [
-                {product_name: {$regex:searchRegex}},
-              { brand_name: { $regex: brandRegex } },
-              { category_name: { $regex: categoryRegex } },
-              ...(minPrice || maxPrice ? [{ price_range: { $gte: minPriceInt , $lte: maxPriceInt } }] : [])
-            ]
-          };
-          console.log('query:',query);
-      
-          const cursor = productsCollection.find(query);
-          const result = await cursor.toArray();
-          res.json(result);
-        } catch (error) {
-          console.error('Error retrieving products:', error);
-          res.status(500).json({ error: 'Internal server error' });
+      try {
+        const { search = '', brand = '', category = '', minPrice = 0, maxPrice = 10000000, sort = '' } = req.query;
+        const searchRegex = new RegExp(search, 'i'); 
+        const brandRegex = new RegExp(brand, 'i');
+        const categoryRegex = new RegExp(category, 'i');
+    
+        const minPriceInt = parseInt(minPrice);
+        const maxPriceInt = parseInt(maxPrice);
+        
+        console.log('min:', minPrice);
+        console.log('search:', search);
+    
+        const query = {
+          $and: [
+            { product_name: { $regex: searchRegex } },
+            { brand_name: { $regex: brandRegex } },
+            { category_name: { $regex: categoryRegex } },
+            ...(minPrice || maxPrice ? [{ price_range: { $gte: minPriceInt, $lte: maxPriceInt } }] : [])
+          ]
+        };
+    
+        let sortOption = {};
+        if (sort === 'asc') {
+          sortOption = { price_range: 1 };
+        } else if (sort === 'desc') {
+          sortOption = { price_range: -1 }; 
         }
-      });
+    
+        console.log('sort:', sortOption);
+    
+        const cursor = productsCollection.find(query).sort(sortOption);
+        const result = await cursor.toArray();
+        res.json(result);
+      } catch (error) {
+        console.error('Error retrieving products:', error);
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    });
+    
 
     app.get('/brands', async (req, res) => {
         try {
@@ -84,7 +94,6 @@ async function run() {
         }
       });
       
-      // Endpoint to get distinct categories
       app.get('/categories', async (req, res) => {
         try {
           const categories = await productsCollection.distinct('category_name');
