@@ -45,6 +45,8 @@ async function run() {
 
     app.get('/products', async (req, res) => {
       try {
+        const page = parseInt(req.query.page);
+        const size = parseInt(req.query.size);
         const { search = '', brand = '', category = '', minPrice = 0, maxPrice = 10000000, sort = '' } = req.query;
         const searchRegex = new RegExp(search, 'i'); 
         const brandRegex = new RegExp(brand, 'i');
@@ -53,9 +55,6 @@ async function run() {
         const minPriceInt = parseInt(minPrice);
         const maxPriceInt = parseInt(maxPrice);
         
-        console.log('min:', minPrice);
-        console.log('search:', search);
-    
         const query = {
           $and: [
             { product_name: { $regex: searchRegex } },
@@ -67,21 +66,23 @@ async function run() {
     
         let sortOption = {};
         if (sort === 'asc') {
-          sortOption = { price_range: 1 };
+          sortOption = { price_range: 1 }; 
         } else if (sort === 'desc') {
           sortOption = { price_range: -1 }; 
         }
     
-        console.log('sort:', sortOption);
+        const totalProducts = await productsCollection.countDocuments(query);
     
-        const cursor = productsCollection.find(query).sort(sortOption);
+        const cursor = productsCollection.find(query).skip(page * size).limit(size).sort(sortOption);
         const result = await cursor.toArray();
-        res.json(result);
+    
+        res.json({ totalProducts, products: result });
       } catch (error) {
         console.error('Error retrieving products:', error);
         res.status(500).json({ error: 'Internal server error' });
       }
     });
+    
     
 
     app.get('/brands', async (req, res) => {
