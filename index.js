@@ -10,6 +10,10 @@ app.use(
     cors({
         origin: [
             'http://localhost:5173', 
+            'https://search-sync.vercel.app', 
+            'https://searchsync.netlify.app', 
+            'https://products-4c6d8.web.app', 
+            'https://products-4c6d8.firebaseapp.com', 
             ],
         credentials: true,
     }),
