@@ -70,7 +70,11 @@ async function run() {
         if (sort === 'asc') {
           sortOption = { price_range: 1 }; 
         } else if (sort === 'desc') {
-          sortOption = { price_range: -1 }; 
+          sortOption = { price_range: -1 };
+        } else if (sort === 'date_asc') {
+          sortOption = { product_creation_date_time: 1 };
+        } else if (sort === 'date_desc') {
+          sortOption = { product_creation_date_time: -1 };
         }
     
         const totalProducts = await productsCollection.countDocuments(query);
@@ -84,6 +88,7 @@ async function run() {
         res.status(500).json({ error: 'Internal server error' });
       }
     });
+    
     
     
 
